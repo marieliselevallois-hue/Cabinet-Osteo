@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Cabinet Ostéo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 10px; }
+    h1, h2 { text-align: center; }
+    input, textarea, button {
+      width: 100%; margin: 5px 0; padding: 8px;
+    }
+    .patient { border: 1px solid #ccc; padding: 8px; margin: 5px 0; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<h1>Cabinet Ostéo</h1>
+
+<div id="login">
+  <input type="password" id="password" placeholder="Mot de passe">
+  <button onclick="login()">Entrer</button>
+</div>
+
+<div id="app" class="hidden">
+  <button onclick="changePassword()">Changer le mot de passe</button>
+  <h2>Patients</h2>
+  <input id="search" placeholder="Rechercher un patient" oninput="renderPatients()">
+  <button onclick="newPatient()">➕ Nouveau patient</button>
+  <div id="patients"></div>
+</div>
+
+<script>
+let data = JSON.parse(localStorage.getItem("osteoData")) || {
+  password: null,
+  patients: []
+};
+
+function save() {
+  localStorage.setItem("osteoData", JSON.stringify(data));
+}
+
+function login() {
+  const p = document.getElementById("password").value;
+  if (!data.password) {
+    data.password = p;
+    save();
+  }
+  if (p === data.password) {
+    document.getElementById("login").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
+    renderPatients();
+  } else {
+    alert("Mot de passe incorrect");
+  }
+}
+
+function changePassword() {
+  const p = prompt("Nouveau mot de passe :");
+  if (p) {
+    data.password = p;
+    save();
+    alert("Mot de passe modifié");
+  }
+}
+
+function newPatient() {
+  const nom = prompt("Nom du patient");
+  if (!nom) return;
+  data.patients.push({
+    nom,
+    prenom: "",
+    naissance: "",
+    metier: "",
+    antecedents: "",
+    consultations: []
+  });
+  save();
+  renderPatients();
+}
+
+function age(date) {
+  if (!date) return "";
+  const d = new Date(date);
+  const diff = Date.now() - d.getTime();
+  return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+}
+
+function renderPatients() {
+  const list = document.getElementById("patients");
+  const q = document.getElementById("search").value.toLowerCase();
+  list.innerHTML = "";
+  data.patients
+    .filter(p => p.nom.toLowerCase().includes(q))
+    .forEach((p, i) => {
+      const div = document.createElement("div");
+      div.className = "patient";
+      div.innerHTML = `
+        <strong>${p.nom} ${p.prenom}</strong><br>
+        ${p.naissance ? age(p.naissance) + " ans" : ""}
+        <button onclick="editPatient(${i})">Modifier</button>
+      `;
+      list.appendChild(div);
+    });
+}
+
+function editPatient(i) {
+  const p = data.patients[i];
+  p.prenom = prompt("Prénom", p.prenom);
+  p.naissance = prompt("Date de naissance (YYYY-MM-DD)", p.naissance);
+  p.metier = prompt("Métier", p.metier);
+  p.antecedents = prompt("Antécédents", p.antecedents);
+  if (confirm("Ajouter une consultation ?")) {
+    p.consultations.push({
+      date: new Date().toLocaleDateString(),
+      motif: prompt("Motif"),
+      traitement: prompt("Traitement"),
+      conseil: prompt("Conseil")
+    });
+  }
+  save();
+  renderPatients();
+}
+</script>
+
+</body>
+</html>
